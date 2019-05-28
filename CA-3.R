@@ -56,26 +56,33 @@ ppr_df_new_dublin$Poperty_Size_Description[ppr_df_new_dublin$Poperty_Size_Descri
 ppr_df_new_dublin$Year <- format(as.Date(ppr_df_new_dublin$Year, format="%d/%m/%Y"),"%Y")
 
 
-install.packages("doBy")
-library(doBy)
+#install.packages("doBy")
+#library(doBy)
 
 ppr_df_new_dublin$Price <- gsub('[€]','',ppr_df_new_dublin$Price)
 
 
 ppr_df_new_dublin$Price <- as.numeric(gsub(',','',ppr_df_new_dublin$Price))
 
+ppr_df_new_dublin <- ppr_df_new_dublin[which(ppr_df_new_dublin$Poperty_Size_Description == "38"), names(ppr_df_new_dublin) %in% c("Year","County","Price","Poperty_Size_Description")]
 
 
 summaryBy(Price ~ Year, data = ppr_df_new_dublin, FUN = list(mean,max,median,sd))
 
+str(ppr_df_new_dublin)
+
+
+count <- table(ppr_df_new_dublin$Year)
+
+count
+
+ppr_df_new_dublin <- ppr_df_new_dublin[-which(ppr_df_new_dublin$Year == "2019"), names(ppr_df_new_dublin) %in% c("Year","County","Price","Poperty_Size_Description")]
 
 
 
 
 
-
-
-ppr_df_new <- ppr_df[which(ppr_df$Poperty_Size_Description != "NA"), names(ppr_df) %in% c("Year","County","Price","Poperty_Size_Description")]
+ppr_df_new <- ppr_df[-which(ppr_df$Poperty_Size_Description != "NA"), names(ppr_df) %in% c("Year","County","Price","Poperty_Size_Description")]
 
 
 
