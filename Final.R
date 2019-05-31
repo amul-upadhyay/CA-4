@@ -1,8 +1,6 @@
-# This R environment comes with all of CRAN preinstalled, as well as many other helpful packages
-# The environment is defined by the kaggle/rstats docker image: https://github.com/kaggle/docker-rstats
-# For example, here's several helpful packages to load in 
 
-## Initialization and Data Reads
+
+# Initialization and Data Reads
 install.packages("lubridate")
 install.packages("GGally")
 install.packages("ggplot2")
@@ -36,17 +34,16 @@ head(ppr_df)
 # Checking Structure of our final dataset
 str(ppr_df)
 
+# Converting district ID to a numerical value
 
 ppr_df$electoral_district_id <- as.numeric(ppr_df$electoral_district_id)
-
-sort(table(ppr_df$ppr_county))
 
 
 # As the property prices dat I have is downloaded from gov.ie and is the only dataset available about property prices in Ireland, 
 # The data does not have any numerical field a=except price This surely makes this dataset suboptimal for machine leaning and analysis.
 # I had to use python to get the lat long of the address being mentioned in the data and sunsequent lat loong column
 # is added in the dataset.
-# Nevertheless we can take out some important information with the available data.
+# Nevertheless, we can take out some important information with the available data.
 
 
 # Listing all the counties by the property sold
@@ -54,7 +51,7 @@ sort(table(ppr_df$ppr_county))
 table(ppr_df$ppr_county)
 
 # Extracting rows where county name is equal to Dublin
-# This is done so that our analysis should be focused 
+# This is done so that our analysis should be focused and meaningful. 
 
 ppr_df <- ppr_df[which(ppr_df$ppr_county == "Dublin"),]
 
@@ -63,8 +60,8 @@ ppr_df <- ppr_df[which(ppr_df$ppr_county == "Dublin"),]
 
 ppr_df <- ppr_df[which(ppr_df$description_of_property == "New Dwelling house /Apartment"),]
 
-# We dnt have much numerical data availabe to us in this particular dataset
-# Henc ewe will change a column named 'property_size_description' to numerical
+# We don't have much numerical data availabe to us in this particular dataset
+# Hence we will change a column named 'property_size_description' to numerical
 # In property_size_description column there are numerical values in the line'
 # Extracting them and renaming the column we can have a numeric column
 
@@ -91,7 +88,12 @@ str(ppr_df)
 
 table(ppr_df$area_greater_than)
 
+####################################################################################
+#                     Training and Testing data set                                #
+####################################################################################
+
 # Splitting the Data Set 
+
 ratio = sample(1:nrow(ppr_df), size = 0.25*nrow(ppr_df))
 
 Test = ppr_df[ratio,] #Test dataset 25% of total
@@ -102,7 +104,9 @@ dim(Training)#15130  21
 str(Training)
 table(is.na(Training)) # To check whether the data in train dataset is missing or not
 
-
+####################################################################################
+#                     Plotting Realtionships with Price                            #
+####################################################################################
 
 ## Checking Relationship between price, area_greater_than
 str(Training)
@@ -135,46 +139,36 @@ plot5=ggpairs(data=Training, columns=c(8,25),
               axisLabels="show")
 plot5
 str(Training)
-############################################################################################################
 
-## From Plot 1, it seems that price vs sqft_living is a nice fit and there are not that many variations compared to others. Diagonal plot shows a nice right squewed normal distribution, which I cannot see in other variables. I can say similar stuff for bathrooms as well but it is more distorded. I would say I would pick 2 variables : sqft_living and bathrooms from plot 1.
-
-## From Plot 2,I can say view and grades are the best ones that explains price. Grade is a perfect normal ditsribution fit and view is more like a right skewed normal distribution (speaking of diagonal plots). other elements have more than 1 peaks therefore not good for modelling. So from Plot 2 I would pick grade and view as my variables
-
-## From Plot 3, I would probaibly pick either lat or long because both seems to be nicely representing the data. One is right skewed normal dist, other one is left skewed normal dist. I would pick variable lat from this plot. 
-
-## So my final 5 variables are: sqft_living, bathrooms, grade, view and lat. Lets verify this using box plots:
-
-## Price vs. Sqft_living ->> Nice correlation, as sqft increases, price increases as well.
+# Price vs are_greater than ->> Nice correaltion as area increases so does the price
 boxplot1=boxplot(price~area_greater_than, data=Training, 
                  col=(c("gold","darkgreen")),
                  main="price~area_greater_than", xlab="Area", ylab="Price")
 
-## Price vs. Bathrooms ->> Nice correlation, as # of bahtrooms increases [median of bar plot], price increases as well, with one expection in when bathroom=7
+## Price vs. latitude ->> Nice correlation, No correaltion.
 boxplot2=boxplot(price~latitude, data=Training, 
                  col=(c("gold","darkgreen")),
                  main="price~latitude", xlab="latitude", ylab="Price")
 
-## Price vs. Grade ->> Nice correlation, grade increases [median of bar plot], price increases as well
+## Price vs. longitude ->> No correaltion
 boxplot3=boxplot(price~longitude, data=Training, 
                  col=(c("gold","darkgreen")),
                  main="price~longitude", xlab="longitude", ylab="Price")
 
-## Price vs. View ->> Nice correlation, view increases [median of bar plot], price increases as well
+## Price vs. Unemployment rate ->> Nice correlation, as unemployment rate decreases. price increases
 boxplot4=boxplot(price~unemployment_rate, data=Training, 
                  col=(c("gold","darkgreen")),
                  main="Price vs. View", xlab="View", ylab="Price")
 
-## Price vs. Lat ->> This is more like a normal dist relationship, price peaks around when lat= 47.64 and declines afterwards, but this can be modeled easily. I would say Lat explains the price as well.
+## Price vs. Electoral Id ->> No correlation
 boxplot5=boxplot(price~electoral_district_id, data=Training, 
                  col=(c("gold","darkgreen")),
                  main="Price vs. Lat", xlab="Lat", ylab="Price")
 
 ## Each of those box plots shows that those variables might be directly related in predicting house prices.
 
-## To strengthen my hypothesis I also computed correlation between prices and variables, and my top 5 picks are supported with correlation coefficients as well [see below]
 
-## Plots 1,2 and 3 shows the correlation between each variables and they are:
+## Plots 1,2,3,4 and 5 shows the correlation between each variables and they are:
 # corr between price vs area_greater_than: 0.098
 # corr between price vs latitude: -0.00578
 # corr between price vs latitude: 0.00192
@@ -182,7 +176,6 @@ boxplot5=boxplot(price~electoral_district_id, data=Training,
 # Corr between price and unemplyment_rate = -0.0721
 
 
-############################################################################################################
 ## I want to use the predictor area greater than for predicting house prices.
 
 ## Question's model claims that error is Normally distributed. But after scatterplot it says model is incorrect. Below see the first scatter plot: 
@@ -194,8 +187,6 @@ plot(Training$area_greater_than,Training$price, main="area greater than vs. Pric
 vec_price_sqftliving <- aggregate(price~area_greater_than, data=Training, FUN = median)
 plot(vec_price_sqftliving, col = "green")
 scatterplot1<-recordPlot()
-
-
 
 
 Model1 <- lm(data=Training,price~area_greater_than)
@@ -228,10 +219,6 @@ cat("MSE for Model1:",MSE_Model1,"\nMSE for Model2:",MSE_Model2)
 cat("MSE for Model 2 is ",round(100*(MSE_Model2/MSE_Model1-1),2),"% more than Model 1. Therefore I can safely suggest that Model 1 is better than Model 2.")
 
 ############################################################################################################
-
-## Best Subset Selection Method: We have suggested 12 variables. For each of P choose 12 subsets, I will calculate SSE and see which one gives me a smaller SSE and I pick that variable. To ease our computation, it is suggested to use subset size 1.
-
-## Suggested variables:  bedrooms, bathrooms, log(sqft living), log(sqft lot), floors, waterfront, view, condition, grade, yr built, lat, long
 
 ## Creating Models using 1 variables each so total 12 Models. 
 Model_PartE_1<-lm(log(price)~area_greater_than,data=Training)
@@ -281,15 +268,11 @@ plot(log(Training$unemployment_rate),log(Training$price), main="log unemployment
 plot(Training$area_greater_than,log(Training$price), main="area greater than vs. Log Price of House", xlab="area greater thanooms", ylab="Log Price of House", pch=19)
 plot(log(Training$area_greater_than),log(Training$price), main="area greater than vs. Log Price of House", xlab="Log area greater than", ylab="Log Price of House", pch=19)
 
-## I think we could take log of bahtroom and get better performance.
-
-
 # Using Scatter Plots for lat vs Price:
 
 plot(Training$latitude,log(Training$price), main="Grade vs. Log Price of House", xlab="Grade", ylab="Log Price of House", pch=19)
 plot(log(Training$latitude),log(Training$price), main="Log Grade vs. Log Price of House", xlab="Log Grade", ylab="Log Price of House", pch=19)
 
-## I think grade is good as it is, we should keep it in the current form.
 
 ## Sub Part III
 Model3<-lm(log(price)~log(area_greater_than)+unemployment_rate,data=Training)
@@ -368,35 +351,18 @@ cat("So confidence region for 95% is [",CI95_Beta1_Model3low,",",CI95_Beta1_Mode
 ## To calculate residuals, we simply need to substract price_hat_Model3 from the actual price.
 residual_Model3=Test$price-price_hat_Model3
 
-plot(Test$area_greater_than,residual_Model3) ## Residual vs. sqft_lot
+plot(Test$area_greater_than,residual_Model3) ## Residual vs. are grater than
 
-plot(Test$unemployment_rate,residual_Model3) ## Residual vs. floors
+plot(Test$unemployment_rate,residual_Model3) ## Residual vs. unemployment rate
 
-plot(Test$latitude,residual_Model3) ## Residual vs. view
+plot(Test$latitude,residual_Model3) ## Residual vs. latitude
 
-plot(Test$longitude,residual_Model3) ## Residual vs. condition
+plot(Test$longitude,residual_Model3) ## Residual vs. longitude
 
-plot(Test$electoral_district_id,residual_Model3) ## Residual vs. sqft_above
+plot(Test$electoral_district_id,residual_Model3) ## Residual vs. electoral district ID
 
 ############################################################################################################
 
-## Sub Part I
-
-
-plot(Test$yr_built,residual_Model3) ## Residual vs. yr_built
-plot(Test$lat,residual_Model3) ## Residual vs. lat
-
-## I would include them by indexing them. So yr_built starts from 1900 and ends at 2015. I would use the following equation: 
-
-## Age = 2015-yr_built +1 
-
-#I want to start the age from 1 because in case I take the log function, I dont want to have log(0) since it is -infinity. I would do the same for lat also: 
-
-## LatOpt= lat- min(lat) +1  
-
-##this way I would start my lat from 1. Then I may perform a log transformation. It is hard to tell which one is more effective without actually computing this.
-
-## Sub Part II
 
 Model4<-lm(log(price)~log(area_greater_than)+lattude,data=Training)
 summary(Model4)
@@ -430,7 +396,7 @@ cat("MSE for Model3:",MSE_Model3,"\nMSE for Model4:",MSE_Model4)
 cat("MSE for Model 3 is ",round(100*(MSE_Model3/MSE_Model4-1),2),"% more than Model 4. Therefore I can safely suggest that Model 4 is better than Model 3. So Model 4 predicts the prices better.")
 
 ############################################################################################################
-## Residual vs. Zipcode 
+## Residual vs. area grater than 
 boxplot_PartI=boxplot(residual_Model3~Test$area_greater_than,
                       col=(c("gold","darkgreen")),
                       main="Residual vs. Zipcode", xlab="Zipcode", ylab="Residual")
@@ -439,7 +405,6 @@ logboxplot_PartI=boxplot(residual_Model3~log(Test$unemployment_rate),
                          col=(c("gold","darkgreen")),
                          main="Residual vs. Log Zipcode", xlab="Log Zipcode", ylab="Residual")
 
-## I tried both regular and log zip codes and they both seems to have same patterns so I will just include zip code directly without transformation.
 
 Model5<-lm(log(price)~log(area_greater_than),data=Training)
 summary(Model5)
@@ -454,4 +419,140 @@ MSE_Model5=mse(price_hat_Model5,Test$price) ## computing MSE for Model 5
 cat("MSE for Model4:",MSE_Model4,"\nMSE for Model5:",MSE_Model5)
 
 cat("MSE for Model 4 is ",round(100*(MSE_Model4/MSE_Model5-1),2),"% more than Model 5. Therefore I can safely suggest that Model 5 is better than Model 4.")
+
+######################################################################################
+#                                FORECASTING                                         #
+######################################################################################
+
+#Installing required packages 
+
+install.packages("forecast")
+library(forecast)
+library('tseries')
+library('ggplot2')
+
+# Checking structure of our dataset.
+
+str(ppr_df)
+
+# It is notes that sale_date is not in the date format as well as not in correct format.
+# Rectifyong this.
+
+ppr_df$sale_date <- strptime(as.character(ppr_df$sale_date), "%d/%m/%Y")
+
+ppr_df$sale_date <-  format(ppr_df$sale_date, "%Y-%m-%d")
+
+ppr_df$sale_date <- as.Date(ppr_df$sale_date)
+
+# plotting the series and visually examining it for any outliers, volatility, or irregularities
+
+ggplot(ppr_df, aes(sale_date, price)) + geom_line() + scale_x_date('month')  + ylab("price of properties") +
+  xlab("")
+
+# This method is also capable of inputing missing values in the series
+# if there are any.Note that we are using the ts() command to create a time series object to pass to tsclean().
+
+
+price_ts = ts(ppr_df[, c('price')])
+
+ppr_df$price_cnt = tsclean(price_ts)
+
+# We plot the clean series using ggplot:
+  
+ggplot() +
+  geom_line(data = ppr_df, aes(x = sale_date, y = price)) + ylab('Cleaned House Price')
+
+#The wider the window of the moving average, the smoother original series becomes.
+# In our bicycle example, we can take weekly or monthly moving average, 
+# smoothing the series into something more stable and therefore predictable:
+
+ppr_df$price_ma = ma(ppr_df$price_cnt, order=7) # using the clean count with no outliers
+
+ppr_df$price_ma_30 = ma(ppr_df$price_cnt, order=30)
+
+
+ggplot() +
+  geom_line(data = ppr_df, aes(x = sale_date, y = clean_cnt, colour = "Price")) +
+  geom_line(data = ppr_df, aes(x = sale_date, y = price_ma,   colour = "Weekly Moving Average"))  +
+  geom_line(data = ppr_df, aes(x = sale_date, y = price_ma_30, colour = "Monthly Moving Average"))  +
+  ylab('Property price')
+
+# Plotting Decomposition to check seasonality, trend and reaminder
+
+price_ma = ts(na.omit(ppr_df$price_ma), frequency=30)
+
+decomp = stl(price_ma, s.window="periodic")
+
+deseasonal_cnt <- seasadj(decomp)
+
+plot(decomp)
+
+# Checking stationarity of the data
+
+adf.test(price_ma, alternative = "stationary")
+
+
+
+# Autocorrelations and Choosing Model Order
+
+Acf(price_ma, main='')
+
+Pacf(price_ma, main='')
+
+# The augmented Dickey-Fuller test on differenced data rejects the null hypotheses of non-stationarity.
+# Plotting the differenced series, we see an oscillating pattern around 0 with no visible strong trend.
+# This suggests that differencing of order 1 terms is sufficient and should be included in the model.
+
+price_d1 = diff(deseasonal_cnt, differences = 1)
+
+plot(price_d1)
+
+
+adf.test(price_d1, alternative = "stationary")
+
+
+Acf(price_d1, main='ACF for Differenced Series')
+
+Pacf(price_d1, main='PACF for Differenced Series')
+
+# Fitting an ARIMA model
+
+auto.arima(deseasonal_cnt, seasonal=FALSE)
+
+fit<-auto.arima(deseasonal_cnt, seasonal=FALSE)
+
+tsdisplay(residuals(fit), lag.max=45, main='(1,1,1) Model Residuals')
+
+# Evaluate and Iterate
+
+fit2 = arima(deseasonal_cnt, order=c(1,1,7))
+
+fit2
+
+tsdisplay(residuals(fit2), lag.max=15, main='Seasonal Model Residuals')
+
+
+fcast <- forecast(fit2, h=30)
+
+plot(fcast)
+
+
+hold <- window(ts(deseasonal_cnt), start=700)
+
+fit_no_holdout = arima(ts(deseasonal_cnt[-c(700:725)]), order=c(1,1,7))
+
+
+fcast_no_holdout <- forecast(fit_no_holdout,h=25)
+
+plot(fcast_no_holdout, main=" ")
+
+lines(ts(deseasonal_cnt))
+
+fit_w_seasonality = auto.arima(deseasonal_cnt, seasonal=TRUE)
+
+fit_w_seasonality
+
+seas_fcast <- forecast(fit_w_seasonality, h=30)
+
+plot(seas_fcast)
 
